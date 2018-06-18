@@ -423,7 +423,7 @@ def get_route_engine_metrics(registry, dev):
     registry.register('startTime', 'gauge')
     registry.register('upTime', 'gauge')
 
-    for route_engine in route_engines.findall('route-engine'):
+    for route_engine in route_engines.findall('.//route-engine'):
 
         fpc = route_engine.find('slot')
         if fpc is not None:
