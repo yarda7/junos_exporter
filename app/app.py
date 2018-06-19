@@ -423,9 +423,9 @@ def get_route_engine_metrics(registry, dev):
     registry.register('startTime', 'gauge')
     registry.register('upTime', 'gauge')
 
-    for route_engine in route_engines.findall('.//route-engine'):
+    for re_item in route_engines.findall('.//multi-routing-engine-item'):
 
-        fpc = route_engine.find('slot')
+        fpc = re_item.find('re-name')
         if fpc is not None:
             meta = {
                 'fpc': fpc.text.strip()
@@ -433,7 +433,7 @@ def get_route_engine_metrics(registry, dev):
         else:
             # not fpc based
             meta = {}
-
+        route_engine = re_item.find('.//route-engine')
         # temp
         temp_element = route_engine.find('temperature')
         if temp_element is not None:
