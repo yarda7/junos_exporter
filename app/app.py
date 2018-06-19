@@ -356,6 +356,20 @@ def get_environment_metrics(registry, dev):
         else:
             registry.add_metric('environmentItem', status, {'name': name})
 
+def get_chassis_cluster_metrics(registry, dev):
+    cc_information = dev.rpc.get_chassis_cluster_information()
+    registry.register('ChassisClusterMemberStatus', 'gauge')
+
+    for fpc in cc_information.findall('multi-routing-engine-item'):
+
+        fpc_name = fpc.find('re-name').text.strip()
+        cc_info = fpc.find('.//chassis-cluster-information')
+        cc_color = cc_info.find('.//current-led-color').text.strip()
+        t_reason = cc_info.find('.//transition-reason').text.strip()
+        state = cc_info.find('.//redundancy-group-list/redundancy-group-status').text.strip()
+        status = 1.0 if cc_color == 'Green' else 0.0
+        registry.add_metric('ChassisClusterMemberStatus', status, {'current-led-color': cc_color, 'fpc': fpc_name, 'transition-reason': t_reason, 'state': state})
+
 
 def get_virtual_chassis_metrics(registry, dev):
     """
@@ -704,6 +718,8 @@ def metrics(environ, start_response):
         get_environment_metrics(registry, dev)
     if 'virtual_chassis' in types:
         get_virtual_chassis_metrics(registry, dev)
+    if 'chassis_cluster' in types:
+        get_chassis_cluster_metrics(registry, dev)
     if 'routing_engine' in types:
         get_route_engine_metrics(registry, dev)
     if 'storage' in types:
