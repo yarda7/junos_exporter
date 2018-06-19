@@ -368,7 +368,7 @@ def get_chassis_cluster_metrics(registry, dev):
         t_reason = cc_info.find('.//transition-reason').text.strip()
         state = cc_info.find('.//redundancy-group-list/redundancy-group-status').text.strip()
         status = 1.0 if cc_color == 'Green' else 0.0
-        registry.add_metric('ChassisClusterMemberStatus', status, {'current-led-color': cc_color, 'fpc': fpc_name, 'transition-reason': t_reason, 'state': state})
+        registry.add_metric('ChassisClusterMemberStatus', status, {'led': cc_color, 'fpc': fpc_name, 'transitionReason': t_reason, 'state': state})
 
 
 def get_virtual_chassis_metrics(registry, dev):
