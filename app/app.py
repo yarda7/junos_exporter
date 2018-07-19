@@ -485,6 +485,45 @@ def get_route_engine_metrics(registry, dev):
         if up_time is not None:
             registry.add_metric('upTime', up_time.attrib['seconds'], meta)
 
+def get_ipsec_metrics(registry, dev):
+    """
+    Get ipsec VPN metrics
+    """
+    #IKE
+    _ikesa_state_values = {
+        'UP': 1,
+        'DOWN': 2
+    }
+
+    route_engines = dev.rpc.get_ike_security_associations_information()
+
+    registry.register('ikeSaState', 'gauge')
+    for re_item in route_engines.findall('.//multi-routing-engine-item'):
+        fpc = re_item.find('re-name').text.strip()
+        for ike_sa in re_item.findall('ike-security-associations-information/ike-security-associations'):
+
+            remote_address = ike_sa.find('ike-sa-remote-address').text.strip()
+            ike_state = ike_sa.find('ike-sa-state').text.strip()
+
+            registry.add_metric('ikeSaState', _ikesa_state_values[ike_state], {'fpc': fpc, 'remote_address': remote_address})
+    #IPSEC
+    _ipsecsa_state_values = {
+        'up': 1,
+        'down': 2
+    }
+    route_engines = dev.rpc.get_security_associations_information()
+    registry.register('ipsecSaState', 'gauge')
+    for re_item in route_engines.findall('.//multi-routing-engine-item'):
+        fpc = re_item.find('re-name').text.strip()
+        for ipsec_sa in re_item.findall('ipsec-security-associations-information/ipsec-security-associations-block'):
+
+            remote_address = ipsec_sa.find('ipsec-security-associations/sa-remote-gateway').text.strip()
+            esp_alg = ipsec_sa.find('ipsec-security-associations/sa-esp-encryption-algorithm').text.strip()
+            hmac_alg = ipsec_sa.find('ipsec-security-associations/sa-hmac-algorithm').text.strip()
+            ipsec_state = ipsec_sa.find('sa-block-state').text.strip()
+
+            registry.add_metric('ipsecSaState', _ipsecsa_state_values[ipsec_state], {'fpc': fpc, 'remote_address': remote_address, 'alg': esp_alg + hmac_alg})
+
 
 def get_storage_metrics(registry, dev):
     """
@@ -726,6 +765,8 @@ def metrics(environ, start_response):
         get_storage_metrics(registry, dev)
     if 'bgp' in types:
         get_bgp_metrics(registry, dev)
+    if 'ipsec' in types:
+        get_ipsec_metrics(registry, dev)
 
     # start response
     data = registry.collect()
