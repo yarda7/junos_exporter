@@ -420,6 +420,37 @@ def get_virtual_chassis_metrics(registry, dev):
             #registry.add_metric('virtualChassisPortStatus', status, {'fpc': fpc_name, 'status': status_text, 'neighbor-id': neighbor_id, 'port-name': port_name, 'neighbor-port': neighbor_port_name})
             registry.add_metric('virtualChassisPortStatus', status, {'fpc': fpc_name, 'status': status_text, 'portName': port_name})
 
+def get_power_metrics(registry, dev):
+    """
+    Get chassis power metrics
+    """
+    _state_values = {
+        'Empty': 0,
+        'Online': 1,
+        'Offline': 2,
+        'Present': 3
+    }
+
+    route_engines = dev.rpc.get_power_usage_information()
+
+    registry.register('pemState', 'gauge')
+    registry.register('dcLoad', 'gauge')
+    registry.register('dcPower', 'gauge')
+    for re_item in route_engines.findall('.//multi-routing-engine-item'):
+        fpc = re_item.find('re-name').text.strip()
+        for pem in re_item.findall('power-usage-information/power-usage-item'):
+
+            name = pem.find('name').text.strip()
+            state = pem.find('state').text.strip()
+            if state == 'Online':
+                dc_power = pem.find('dc-output-detail/dc-power').text.strip()
+                dc_load = pem.find('dc-output-detail/dc-load').text.strip()
+                registry.add_metric('dcLoad', dc_load, {'fpc': fpc, 'name': name })
+                registry.add_metric('dcPower', dc_power, {'fpc': fpc, 'name': name })
+
+            registry.add_metric('pemState', _state_values[state], {'fpc': fpc, 'name': name })
+
+
 
 def get_route_engine_metrics(registry, dev):
     """
@@ -767,6 +798,8 @@ def metrics(environ, start_response):
         get_bgp_metrics(registry, dev)
     if 'ipsec' in types:
         get_ipsec_metrics(registry, dev)
+    if 'power' in types:
+        get_power_metrics(registry, dev)
 
     # start response
     data = registry.collect()
